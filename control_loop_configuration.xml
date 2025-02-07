@@ -14,6 +14,15 @@
 		<field name="output_double_register_3" type="DOUBLE"/>
 		<field name="output_double_register_4" type="DOUBLE"/>
 		<field name="output_double_register_5" type="DOUBLE"/>
+		<field name="output_double_register_6" type="DOUBLE"/>
+		<field name="output_double_register_7" type="DOUBLE"/>
+		<field name="output_double_register_8" type="DOUBLE"/>
+		<field name="output_double_register_9" type="DOUBLE"/>
+		<field name="output_double_register_10" type="DOUBLE"/>
+		<field name="output_double_register_11" type="DOUBLE"/>
+		<field name="target_q" type="VECTOR6D"/>
+		<field name="target_qd" type="VECTOR6D"/>
+
 	</recipe>
 
 	<recipe key="setp">
@@ -23,6 +32,12 @@
 		<field name="input_double_register_3" type="DOUBLE"/>
 		<field name="input_double_register_4" type="DOUBLE"/>
 		<field name="input_double_register_5" type="DOUBLE"/>
+		<field name="input_double_register_6" type="DOUBLE"/>
+		<field name="input_double_register_7" type="DOUBLE"/>
+		<field name="input_double_register_8" type="DOUBLE"/>
+		<field name="input_double_register_9" type="DOUBLE"/>
+		<field name="input_double_register_10" type="DOUBLE"/>
+		<field name="input_double_register_11" type="DOUBLE"/>
 		<field name="input_bit_registers0_to_31" type="UINT32"/>
 	</recipe>
 

@@ -6,7 +6,7 @@ sys.path.append('')
 import logging
 import rtde.rtde as rtde
 import rtde.rtde_config as rtde_config
-
+import numpy as np
 import time
 from matplotlib import pyplot as plt
 from min_jerk_planner_translation import PathPlanTranslation
@@ -26,7 +26,7 @@ def list_to_setp(setp, list):
 
 
 # ------------- robot communication stuff -----------------
-ROBOT_HOST = '192.168.1.103'
+ROBOT_HOST = '192.168.56.101'
 ROBOT_PORT = 30004
 config_filename = 'control_loop_configuration.xml'  # specify xml file for data synchronization
 
@@ -71,9 +71,10 @@ watchdog.input_int_register_0 = 0
 if not con.send_start():
     sys.exit()
 
-start_pose = [-0.18507570121045797, -0.43755157063468963, 0.21101969081827837, -0.06998478570599498, -3.0949971695297402, 0.10056260631290592]
-desired_pose = [-0.41227681851594755, -0.553539320093064, 0.07077025734923525, -0.06990025901302169, -3.0949715741835195, 0.10065200008528846]
-
+start_pose = [-0.31561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438]
+desired_pose = [0.31561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.79044182826995194, -0.02877771799883438]
+rotation_angle = np.deg2rad(45)
+start_pose[4] += rotation_angle
 orientation_const = start_pose[3:]
 
 state = con.receive()
