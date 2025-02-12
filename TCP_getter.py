@@ -103,7 +103,8 @@ while keep_running:
     # print(f"Robot Mode: {state.robot_mode}")  # Robot mode (Idle, Running, etc.)
     # print(f"Joint Positions (target_q): {state.target_q}")  # Joint angles in radians
 
-    print("TCP Pose:", state.actual_q)
+    print("Joint State:", state.actual_q)
+    print("TCP Pose: ", state.actual_TCP_pose)
     keep_running = False
 
     # kick watchdog

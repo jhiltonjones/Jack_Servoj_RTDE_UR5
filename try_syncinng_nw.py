@@ -6,7 +6,9 @@ import time
 import numpy as np
 import matplotlib.pyplot as plt
 from min_jerk_test2 import PathPlanTranslation  # Ensure this module is available
-
+from rotation_matrix import T, transform_point
+from bfgs_minimise import alpha_star, alpha_star_deg
+from constants import d, h
 def setp_to_list(setp, offset=0):
     return [setp.__dict__[f"input_double_register_{i + offset}"] for i in range(6)]
 
@@ -57,27 +59,34 @@ watchdog.input_int_register_0 = 0
 if not con.send_start():
     sys.exit()
 
+# This takes in d,h from the constants file and then inputs this into the rotation matrix to give the waypoints
+transformed_points = transform_point(T, d, h)
+x_robotic_arm = transformed_points[0]
+y_robotic_arm = transformed_points[1]
+
+start_point = [-0.7997019926654261, -1.3955088269761582, 1.7951162497149866, 1.0444416242786865, 1.5849697589874268, -2.961236063634054]
 # Define Waypoints for Continuous Trajectory
 waypoints = [
     [-0.3156201917835993, 0.4452004411528787, 0.3870100889881868, -2.1950753824332496, 2.2236917890585493, -0.012607305520799127],
-    # [-0.3156201917835993, 0.4452004411528787, 0.3870100889881868, -2.1950753824332496, 2.2236917890585493, -0.012607305520799127]
-    [0.11561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438], # Start
-    [0.01561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [-0.31561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [-0.31561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [0.11561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438], # Start
-    [0.01561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [-0.31561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [-0.31561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [-0.31561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
-    [0.01561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438] 
+    [x_robotic_arm, y_robotic_arm, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [0.11561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438], # Start
+    # [0.01561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [-0.31561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [-0.31561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [0.11561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438], # Start
+    # [0.01561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [-0.31561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [-0.31561346376380156, 0.4392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438]
+    # [-0.31561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438],
+    # [0.01561346376380156, 0.8392848297605487, 0.3870643751382633, -3.1129835149573597, -0.39044182826995194, -0.02877771799883438] 
 ]
 orientation_const = waypoints[0][3:]
-trajectory_time_total = 35 # Total time for full motion
+trajectory_time_total = 3 # Total time for full motion
 trajectory_time_per_segment = trajectory_time_total / (len(waypoints) - 1)  # Split time per segment
 state = con.receive()
 tcp1 = state.actual_TCP_pose
 print(tcp1)
+start_point_list = setp_to_list(setp, offset=6)
 waypoints_list = setp_to_list(setp, offset=0)  # Read waypoints (0-5)
 position_list = setp_to_list(setp, offset=6)  # Read position (6-11)
 
@@ -89,28 +98,45 @@ while True:
     if state.output_bit_registers0_to_31:  
         print('Boolean 1 is True, proceeding to mode 1\n')
         break
-
-print("-------Executing moveJ -----------\n")
+print("-------Executing moveJ start -----------\n")
 
 # Send Initial Pose
 watchdog.input_int_register_0 = 1
+time.sleep(0.5)  # Allow time for movement
+
+con.send(watchdog)
+
+list_to_setp(setp, start_point, offset=6)
+con.send(setp)
+while True:
+    # print('Waiting for moveJ() second to finish...')
+    state = con.receive()
+    con.send(watchdog)
+    if not state.output_bit_registers0_to_31:
+        print('MoveJ completed, proceeding to next mode\n')
+        break
+print("-------Executing moveJ -----------\n")
+
+# Send Initial Pose
+time.sleep(0.5)
+watchdog.input_int_register_0 = 2
 con.send(watchdog)
 list_to_setp(setp, waypoints[0], offset=0)  # Waypoints in registers 0-5
 con.send(setp) 
 
 while True:
-    print('Waiting for moveJ() first to finish')
+    # print('Waiting for moveJ() first to finish')
     state = con.receive()
     con.send(watchdog)
     if not state.output_bit_registers0_to_31:
         print('Proceeding to mode 2\n')
         break
-
+time.sleep(0.5)
 # Execute ServoJ with Smooth Multi-Waypoint Trajectory
 print("-------Executing servoJ  -----------\n")
-watchdog.input_int_register_0 = 2
+watchdog.input_int_register_0 = 3
 con.send(watchdog)
-trajectory_time = 35  # time of min_jerk trajectory
+trajectory_time = 8  # time of min_jerk trajectory
 dt = 1/500  # 500 Hz    # frequency
 plotter = True
 if plotter:
@@ -155,7 +181,6 @@ while current_waypoint_index < len(waypoints) - 1:
             pose = position_ref.tolist() + orientation_const
             list_to_setp(setp, pose)
             con.send(setp)
-            print("Sent coordinates")
 
 
 
@@ -188,14 +213,14 @@ time.sleep(0.5)  # Ensure the robot has time to receive and process the movement
 
 print("-------Executing moveJ -----------\n")
 
-watchdog.input_int_register_0 = 3
+watchdog.input_int_register_0 = 4
 # Read the actual joint positions before modification
 actual_position = state.actual_q
 print("Actual joint position before moveJ:", actual_position)
 
 # Compute rotation and modify wrist joint 3 (joint index 5)
-print("Rotation angle in radians added: ", 0)
-rotation_angle_radians = np.deg2rad(0)  # Example: adding 100 degrees
+print("Rotation angle in radians added: ", alpha_star_deg)
+rotation_angle_radians = alpha_star  # Example: adding 100 degrees
 position = actual_position[:]  # Copy current joint states
 position = [float(joint) for joint in actual_position]  # Convert to float
 position[5] += rotation_angle_radians  # Apply rotation
@@ -215,7 +240,7 @@ con.send(watchdog)
 # con.send(setp)
 
 while True:
-    print('Waiting for moveJ() second to finish...')
+    # print('Waiting for moveJ() second to finish...')
     state = con.receive()
     con.send(watchdog)
     if not state.output_bit_registers0_to_31:
@@ -227,8 +252,10 @@ state = con.receive()
 print('--------------------')
 print("Actual joint position after moveJ:", state.actual_q)
 print("Actual TCP pose after moveJ:", state.actual_TCP_pose)
+print("Moved to position: ", d,h)
+print("With a rotation of: ", alpha_star_deg)
 # Mode 3
-watchdog.input_int_register_0 = 4
+watchdog.input_int_register_0 = 5
 con.send(watchdog)
 
 con.send_pause()

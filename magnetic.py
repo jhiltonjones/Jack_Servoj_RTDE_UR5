@@ -10,26 +10,25 @@ def magnetic_field_external_magnet(mu_0, p, m_a):
     p_norm = np.linalg.norm(p)
     if p_norm == 0:
         raise ValueError("Position vector p cannot be zero.")
-
-
     p_hat = p / p_norm  
 
-
     mu_0_factor = 1e-7  
-    
-
     term1 = (3 * np.dot(m_a, p_hat) * p_hat - m_a) / (p_norm**3)
     B = mu_0_factor * term1
 
     return np.array(B) 
-
+def compute_torque(c_vector, m_vector, p, n_0):
+    term1 = n_0 * c_vector
+    term2 = ((3 * p * p.T) - np.eye(3)) * m_vector
+    output = np.cross(term1, term2)
+    return output
 
 def volume_calculator_cyclinder(radius, height):
     volume = np.pi * radius**2 * height
     return volume
 
-def magneitc_moment(mu_0, B, Volume, m_hat):
-    magnetic_moment_v = (1/mu_0) * B * Volume * m_hat  # This is a 3D vector
+def magnetic_moment(mu_0, B, Volume, m_hat):
+    magnetic_moment_v = (B * Volume * m_hat) / mu_0  # Correct scaling
     moment_vector = np.linalg.norm(magnetic_moment_v)
     return magnetic_moment_v, moment_vector
 
